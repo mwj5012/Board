@@ -315,66 +315,66 @@ public class BoardController {
 		logger.info("boardNo :: {}", resultVO.getBoard_no());	// 채번된 게시판번호
 		
 		// 파일 업로드
-				logger.info("파일 업로드 확인 ");
-				
-				String uploadFolder = "D:\\upload";	// 업로드 경로
-				
-				String uploadFolderPath = getFolder();
-				
-				// make 년-월-일 folder ----
-				File uploadPath = new File(uploadFolder, uploadFolderPath);
-				logger.info("업로드 경로 :: " + uploadPath);
-				
-				if (uploadPath.exists() == false) {	// 경로 폴더가 없으면
-					uploadPath.mkdirs();	// 폴더 생성
-				}
-				// make yyyy/MM/dd folder
-				
-				for (MultipartFile multipartFile : uploadFile) {
+		logger.info("파일 업로드 확인 ");
+		
+		String uploadFolder = "D:\\upload";	// 업로드 경로
+		
+		String uploadFolderPath = getFolder();
+		
+		// make 년-월-일 folder ----
+		File uploadPath = new File(uploadFolder, uploadFolderPath);
+		logger.info("업로드 경로 :: " + uploadPath);
+		
+		if (uploadPath.exists() == false) {	// 경로 폴더가 없으면
+			uploadPath.mkdirs();	// 폴더 생성
+		}
+		// make yyyy/MM/dd folder
+		
+		for (MultipartFile multipartFile : uploadFile) {
 
-					logger.info("---------------------------");
-					logger.info("파일명 :: " + multipartFile.getOriginalFilename());
-					logger.info("파일 크기 :: " + multipartFile.getSize());
+			logger.info("---------------------------");
+			logger.info("파일명 :: " + multipartFile.getOriginalFilename());
+			logger.info("파일 크기 :: " + multipartFile.getSize());
+			
+			String orgFileName = multipartFile.getOriginalFilename();
+			String uploadFileName = "";
+			
+			// IE has file path
+			uploadFileName = orgFileName.substring(orgFileName.lastIndexOf("\\") + 1);
+			logger.info("only file name :: " + uploadFileName);
+			
+			// 파일 이름 중복 방지를 위한 UUID 적용
+			UUID uuid = UUID.randomUUID();
+			uploadFileName = uuid.toString() + "_" + uploadFileName;
+			
+			File saveFile = new File(uploadPath, uploadFileName);
+			
+			// 파일 존재 여부 체크
+			if(saveFile != null && orgFileName.length() != 0) {
+			
+				// attach 테이블에 vo값 세팅
+				BoardAttachVO fileVO = new BoardAttachVO();
+				fileVO.setBoard_no(resultVO.getBoard_no());	// 게시판번호
+				fileVO.setFileName(orgFileName);			// 원본파일명
+				fileVO.setUuid(uploadFileName);				// 변경파일명(uuid)
+				fileVO.setUploadPath(uploadFolderPath);		// 파일경로
+				
+				logger.info("uploadFolderPath :: " + uploadFolderPath);
+				
+				try {
+					multipartFile.transferTo(saveFile);	// 파일 업로드 시 원래 파일의 이름(+UUID)으로 경로에 저장
 					
-					String orgFileName = multipartFile.getOriginalFilename();
-					String uploadFileName = "";
+					// 파일정보 insert
+					service.insertFile(fileVO);
 					
-					// IE has file path
-					uploadFileName = orgFileName.substring(orgFileName.lastIndexOf("\\") + 1);
-					logger.info("only file name :: " + uploadFileName);
 					
-					// 파일 이름 중복 방지를 위한 UUID 적용
-					UUID uuid = UUID.randomUUID();
-					uploadFileName = uuid.toString() + "_" + uploadFileName;
-					
-					File saveFile = new File(uploadPath, uploadFileName);
-					
-					// 파일 존재 여부 체크
-					if(saveFile != null && orgFileName.length() != 0) {
-					
-						// attach 테이블에 vo값 세팅
-						BoardAttachVO fileVO = new BoardAttachVO();
-						fileVO.setBoard_no(resultVO.getBoard_no());	// 게시판번호
-						fileVO.setFileName(orgFileName);			// 원본파일명
-						fileVO.setUuid(uploadFileName);				// 변경파일명(uuid)
-						fileVO.setUploadPath(uploadFolderPath);		// 파일경로
-						
-						logger.info("uploadFolderPath :: " + uploadFolderPath);
-						
-						try {
-							multipartFile.transferTo(saveFile);	// 파일 업로드 시 원래 파일의 이름(+UUID)으로 경로에 저장
-							
-							// 파일정보 insert
-							service.insertFile(fileVO);
-							
-							
-						} catch (Exception e) {
-							logger.error(e.getMessage());
-						} // end catch
-					
-					}
-					
-				} // end for
+				} catch (Exception e) {
+					logger.error(e.getMessage());
+				} // end catch
+			
+			}
+			
+		} // end for
 		
 		return "redirect:/board/detail?board_no=" + vo.getBoard_no();
 	}
